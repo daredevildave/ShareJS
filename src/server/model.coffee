@@ -545,9 +545,9 @@ module.exports = Model = (db, options) ->
       metaOpData.v = doc.v if !metaOpData.v
 
       # opQueue disambiguates by looking for opData.op or opData.mop
-      process.nextTick -> doc.opQueue metaOpData, (error, newVersion) ->
+      process.nextTick -> doc.opQueue metaOpData, (error) ->
         refreshReapingTimeout docName
-        callback? error, newVersion
+        callback? error
 
   # Listen to all ops from the specified version. If version is in the past, all
   # ops since that version are sent immediately to the listener.
