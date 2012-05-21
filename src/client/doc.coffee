@@ -82,7 +82,7 @@ class Doc
     if !@metadata
       @metadata = metadata.create()
 
-      metadata.applyMop(@metadata, mop)
+    metadata.applyMop(@metadata, mop) 
 
     @emit 'metachange', @metadata
     if (mop.n)
