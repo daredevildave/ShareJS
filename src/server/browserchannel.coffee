@@ -288,10 +288,7 @@ module.exports = (createAgent, options) ->
           msg.v = version
           callback()
 
-          if docData
-            sendMetadata docName, query.v, docData.meta
-          else
-            sendMetadata docName, query.v, null
+          sendMetadata docName, version, docData?.meta
 
       # Technically, we don't need a snapshot if the user called create but not open or createSnapshot,
       # but no clients do that yet anyway.

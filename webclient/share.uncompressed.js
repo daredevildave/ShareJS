@@ -574,10 +574,8 @@
     };
 
     Doc.prototype._mopApply = function(mop, isRemote) {
-      if (!this.metadata) {
-        this.metadata = metadata.create();
-        metadata.applyMop(this.metadata, mop);
-      }
+      if (!this.metadata) this.metadata = metadata.create();
+      metadata.applyMop(this.metadata, mop);
       this.emit('metachange', this.metadata);
       if (mop.n) this.emit('metanew', mop.n);
       if (mop.as) this.emit('metainsert', mop.id, mop.as);

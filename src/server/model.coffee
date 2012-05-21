@@ -211,7 +211,7 @@ module.exports = Model = (db, options) ->
         else # Metadata op.
           doc.meta = metadata.applyMop doc.meta, opData.mop
           doc.eventEmitter.emit 'mop', opData, doc.meta
-          callback(null, doc.v)
+          callback()
           
       catch error
         console.error error.stack
