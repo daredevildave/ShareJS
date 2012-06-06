@@ -17,11 +17,16 @@ module.exports = testCase
     @unused = 'nonexistantdoc'
 
     # Mock out Date.now function to make metadata deterministic
-    Date.now = () -> return 0
+    @dateNow = Date.now
+    Date.now = () -> 0
 
     @model.create @name, 'simple', (error) ->
       assert.fail error if error
       callback()
+  
+  tearDown: (callback) ->
+    Date.now = @dateNow
+    callback()
 
   'model emits a create event when a document is created': (test) ->
     @model.on 'create', (name, data) =>

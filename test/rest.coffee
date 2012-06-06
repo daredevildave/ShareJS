@@ -52,7 +52,8 @@ module.exports = testCase
     }
 
     # Mock away Date.now function to make metadata deterministic
-    Date.now = () -> return 0
+    @dateNow = Date.now
+    Date.now = () -> 0
 
     # For some reason, exceptions thrown in setUp() are ignored.
     # At least this way we'll get a stack trace.
@@ -68,6 +69,7 @@ module.exports = testCase
 
 
   tearDown: (callback) ->
+    Date.now = @dateNow
     @server.on 'close', callback
     @server.close()
 
