@@ -154,6 +154,9 @@ class Connection
 
     @makeDoc docName, {create:true, type:type.name}, callback
 
+  setExtraHeaders: (headers) ->
+    @socket.setExtraHeaders headers
+
 # Not currently working.
 #  create: (type, callback) ->
 #    open null, type, callback

@@ -181,6 +181,7 @@ module.exports = (createAgent, options) ->
       return callback 'Doc already closed' unless listener?
 
       agent.removeListener docName
+
       delete docState[docName].listener
       callback()
 

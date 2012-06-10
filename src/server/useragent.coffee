@@ -63,6 +63,7 @@ module.exports = (model, options) ->
 
       auth this, action
 
+    # Connect to a document, add session data to metadata
     connect: (docName, callback) ->
       mop = {
         mop: {
@@ -76,8 +77,19 @@ module.exports = (model, options) ->
       }
       model.applyMop docName, mop, callback
 
-    disconnect: ->
-      model.removeListener docName, listener for docName, listener of @listeners
+    # Disconnect from a document, remove session data from metadata
+    disconnect: (docName, callback) ->
+      mop = {
+        mop: {
+          id: @sessionId,
+          p: 'sessions',
+          rs: {
+            name: @name,
+            ctime: Date.now()
+          }
+        }
+      }
+      model.applyMop docName, mop, callback
 
     getOps: (docName, start, end, callback) ->
       @doAuth {docName, start, end}, 'get ops', callback, ->
@@ -149,21 +161,7 @@ module.exports = (model, options) ->
       model.removeListener docName, @listeners[docName]
       delete @listeners[docName]
 
-      mop = { 
-        v: 0,
-        mop: {
-          id: @sessionId,
-          p: 'sessions',
-          rs: {
-              name: @name, 
-              ctime: Date.now()
-            }
-        }
-      }
-
-      model.applyMop docName, mop, (error, version) ->
-        callback? error, version
-
+      @disconnect docName
 
   # Finally, return a function which takes client data and returns an authenticated useragent object
   # through a callback.

@@ -953,6 +953,10 @@
       }, callback);
     };
 
+    Connection.prototype.setExtraHeaders = function(headers) {
+      return this.socket.setExtraHeaders(headers);
+    };
+
     return Connection;
 
   })();
@@ -985,7 +989,7 @@
         del = function() {
           return delete connections[origin];
         };
-        c.on('disconnecting', del);
+        c.on('disconnected', del);
         c.on('connect failed', del);
         connections[origin] = c;
       }
@@ -1001,13 +1005,16 @@
       }
       if (numDocs === 0) return c.disconnect();
     };
-    return function(docName, type, origin, callback) {
-      var c;
-      if (typeof origin === 'function') {
-        callback = origin;
-        origin = null;
+    return function(docName, type, options, callback) {
+      var c, headers, origin;
+      if (typeof options === 'function') {
+        callback = options;
+        options = null;
       }
+      origin = options != null ? options.origin : void 0;
+      headers = options != null ? options.headers : void 0;
       c = getConnection(origin);
+      if (headers) c.setExtraHeaders(headers);
       c.numDocs++;
       c.open(docName, type, function(error, doc) {
         if (error) {

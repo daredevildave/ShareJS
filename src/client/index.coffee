@@ -31,7 +31,7 @@ exports.open = do ->
       c = new Connection origin
 
       del = -> delete connections[origin]
-      c.on 'disconnecting', del
+      c.on 'disconnected', del
       c.on 'connect failed', del
       connections[origin] = c
     
@@ -47,12 +47,19 @@ exports.open = do ->
     if numDocs == 0
       c.disconnect()
  
-  (docName, type, origin, callback) ->
-    if typeof origin == 'function'
-      callback = origin
-      origin = null
+  (docName, type, options, callback) ->
+    if typeof options == 'function'
+      callback = options
+      options = null
 
+    origin = options?.origin
+    headers = options?.headers
+    
     c = getConnection origin
+
+    if headers
+      c.setExtraHeaders headers
+
     c.numDocs++
     c.open docName, type, (error, doc) ->
       if error
@@ -65,7 +72,6 @@ exports.open = do ->
     
     c.on 'connect failed'
     return c
-
 
 unless WEB?
   exports.Doc = require('./doc').Doc
