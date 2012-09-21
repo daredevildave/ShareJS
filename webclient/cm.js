@@ -1,6 +1,5 @@
 (function() {
   var applyToShareJS;
-
   applyToShareJS = function(editorDoc, delta, doc) {
     var delLen, i, startPos;
     startPos = 0;
@@ -19,11 +18,14 @@
         i++;
       }
       doc.del(startPos, delLen);
-      if (delta.text) doc.insert(startPos, delta.text.join('\n'));
+      if (delta.text) {
+        doc.insert(startPos, delta.text.join('\n'));
+      }
     }
-    if (delta.next) return applyToShareJS(editorDoc, delta.next, doc);
+    if (delta.next) {
+      return applyToShareJS(editorDoc, delta.next, doc);
+    }
   };
-
   window.sharejs.extendDoc('attach_cm', function(editor, keepEditorContents) {
     var check, editorListener, sharedoc, suppress;
     if (!this.provides.text) {
@@ -34,12 +36,12 @@
       return window.setTimeout(function() {
         var editorText, otText;
         editorText = editor.getValue();
-        otText = sharedoc.getValue();
+        otText = sharedoc.getText();
         if (editorText !== otText) {
           console.error("Text does not match!");
           console.error("editor: " + editorText);
           console.error("ot:     " + otText);
-          return editor.setValue(sharedoc.getValue());
+          return editor.setValue(sharedoc.getText());
         }
       }, 0);
     };
@@ -52,7 +54,9 @@
     check();
     suppress = false;
     editorListener = function(ed, change) {
-      if (suppress) return;
+      if (suppress) {
+        return;
+      }
       applyToShareJS(editor, change, sharedoc);
       return check();
     };
@@ -77,5 +81,4 @@
       return delete this.detach_cm;
     };
   });
-
 }).call(this);

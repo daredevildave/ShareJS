@@ -1,14 +1,22 @@
 {exec} = require 'child_process'
-fs = require 'fs'
-path = require 'path'
+fs     = require 'fs'
+path   = require 'path'
+os     = require 'os'
+
+# Gain access through PATH to all binaries added by `npm install`
+npm_bin  = path.resolve(path.join('node_modules', '.bin'))
+path_sep = if os.platform() == 'win32' then ";" else ":"
+process.env.PATH = "#{npm_bin}#{path_sep}#{process.env.PATH}"
 
 task 'test', 'Run all tests', ->
 	# run directly to get all the delicious output
-	console.log 'Running tests...'
+	console.log 'Running tests... (is your webclient up-to-date?)'
 	exec 'nodeunit tests.coffee', (err, stdout, stderr) ->
 		throw err if err
 
+# This is only needed to be able to refer to the line numbers of crashes
 task 'build', 'Build the .js files', (options) ->
+	console.log('Compiling Coffee from src to lib')
 	exec "coffee --compile --bare --output lib/ src/", (err, stdout, stderr) ->
 		throw err if err
 		console.log stdout + stderr

@@ -1,21 +1,22 @@
 (function() {
-  var BCSocket, Connection, Doc, MicroEvent, append, bootstrapTransform, checkMop, checkValidComponent, checkValidOp, exports, invertComponent, meta, metadata, nextTick, strInject, text, transformComponent, transformPosition, types;
-  var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (__hasProp.call(this, i) && this[i] === item) return i; } return -1; };
-
-  window.sharejs = exports = {
-    'version': '0.5.0-pre'
+  var BCSocket, Connection, Doc, MicroEvent, SockJS, append, bootstrapTransform, checkMop, checkValidComponent, checkValidOp, exports, hasBCSocket, hasSockJS, invertComponent, meta, metadata, nextTick, strInject, text, transformComponent, transformPosition, types, useSockJS;
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __slice = Array.prototype.slice, __indexOf = Array.prototype.indexOf || function(item) {
+    for (var i = 0, l = this.length; i < l; i++) {
+      if (this[i] === item) return i;
+    }
+    return -1;
   };
-
-  if (typeof WEB === 'undefined') window.WEB = true;
-
+  window.sharejs = exports = {
+    'version': '0.5.0'
+  };
+  if (typeof WEB === 'undefined') {
+    window.WEB = true;
+  }
   nextTick = typeof WEB !== "undefined" && WEB !== null ? function(fn) {
     return setTimeout(fn, 0);
   } : process['nextTick'];
-
   MicroEvent = (function() {
-
     function MicroEvent() {}
-
     MicroEvent.prototype.on = function(event, fct) {
       var _base;
       this._events || (this._events = {});
@@ -23,49 +24,51 @@
       this._events[event].push(fct);
       return this;
     };
-
     MicroEvent.prototype.removeListener = function(event, fct) {
       var i, listeners, _base;
-      var _this = this;
       this._events || (this._events = {});
       listeners = ((_base = this._events)[event] || (_base[event] = []));
       i = 0;
       while (i < listeners.length) {
-        if (listeners[i] === fct) listeners[i] = void 0;
+        if (listeners[i] === fct) {
+          listeners[i] = void 0;
+        }
         i++;
       }
-      nextTick(function() {
+      nextTick(__bind(function() {
         var x;
-        return _this._events[event] = (function() {
+        return this._events[event] = (function() {
           var _i, _len, _ref, _results;
           _ref = this._events[event];
           _results = [];
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             x = _ref[_i];
-            if (x) _results.push(x);
+            if (x) {
+              _results.push(x);
+            }
           }
           return _results;
-        }).call(_this);
-      });
+        }).call(this);
+      }, this));
       return this;
     };
-
     MicroEvent.prototype.emit = function() {
       var args, event, fn, _i, _len, _ref, _ref2;
       event = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-      if (!((_ref = this._events) != null ? _ref[event] : void 0)) return this;
+      if (!((_ref = this._events) != null ? _ref[event] : void 0)) {
+        return this;
+      }
       _ref2 = this._events[event];
       for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
         fn = _ref2[_i];
-        if (fn) fn.apply(this, args);
+        if (fn) {
+          fn.apply(this, args);
+        }
       }
       return this;
     };
-
     return MicroEvent;
-
   })();
-
   MicroEvent.mixin = function(obj) {
     var proto;
     proto = obj.prototype || obj;
@@ -74,9 +77,9 @@
     proto.emit = MicroEvent.prototype.emit;
     return obj;
   };
-
-  if (typeof WEB === "undefined" || WEB === null) module.exports = MicroEvent;
-
+  if (typeof WEB === "undefined" || WEB === null) {
+    module.exports = MicroEvent;
+  }
   exports['_bt'] = bootstrapTransform = function(type, transformComponent, checkValidOp, append) {
     var transformComponentX, transformX;
     transformComponentX = function(left, right, destLeft, destRight) {
@@ -120,7 +123,9 @@
             break;
           }
         }
-        if (rightComponent != null) append(newRightOp, rightComponent);
+        if (rightComponent != null) {
+          append(newRightOp, rightComponent);
+        }
         leftOp = newLeftOp;
       }
       return [leftOp, newRightOp];
@@ -130,7 +135,9 @@
       if (!(type === 'left' || type === 'right')) {
         throw new Error("type must be 'left' or 'right'");
       }
-      if (otherOp.length === 0) return op;
+      if (otherOp.length === 0) {
+        return op;
+      }
       if (op.length === 1 && otherOp.length === 1) {
         return transformComponent([], op[0], otherOp[0], type);
       }
@@ -143,21 +150,17 @@
       }
     };
   };
-
-  if (typeof WEB === 'undefined') exports.bootstrapTransform = bootstrapTransform;
-
+  if (typeof WEB === 'undefined') {
+    exports.bootstrapTransform = bootstrapTransform;
+  }
   text = {};
-
   text.name = 'text';
-
   text.create = function() {
     return '';
   };
-
   strInject = function(s1, pos, s2) {
     return s1.slice(0, pos) + s2 + s1.slice(pos);
   };
-
   checkValidComponent = function(c) {
     var d_type, i_type;
     if (typeof c.p !== 'number') {
@@ -168,9 +171,10 @@
     if (!((i_type === 'string') ^ (d_type === 'string'))) {
       throw new Error('component needs an i or d field');
     }
-    if (!(c.p >= 0)) throw new Error('position cannot be negative');
+    if (!(c.p >= 0)) {
+      throw new Error('position cannot be negative');
+    }
   };
-
   checkValidOp = function(op) {
     var c, _i, _len;
     for (_i = 0, _len = op.length; _i < _len; _i++) {
@@ -179,7 +183,6 @@
     }
     return true;
   };
-
   text.apply = function(snapshot, op) {
     var component, deleted, _i, _len;
     checkValidOp(op);
@@ -188,7 +191,7 @@
       if (component.i != null) {
         snapshot = strInject(snapshot, component.p, component.i);
       } else {
-        deleted = snapshot.slice(component.p, (component.p + component.d.length));
+        deleted = snapshot.slice(component.p, component.p + component.d.length);
         if (component.d !== deleted) {
           throw new Error("Delete component '" + component.d + "' does not match deleted text '" + deleted + "'");
         }
@@ -197,10 +200,11 @@
     }
     return snapshot;
   };
-
   text._append = append = function(newOp, c) {
     var last, _ref, _ref2;
-    if (c.i === '' || c.d === '') return;
+    if (c.i === '' || c.d === '') {
+      return;
+    }
     if (newOp.length === 0) {
       return newOp.push(c);
     } else {
@@ -220,7 +224,6 @@
       }
     }
   };
-
   text.compose = function(op1, op2) {
     var c, newOp, _i, _len;
     checkValidOp(op1);
@@ -232,23 +235,26 @@
     }
     return newOp;
   };
-
   text.compress = function(op) {
     return text.compose([], op);
   };
-
   text.normalize = function(op) {
     var c, newOp, _i, _len, _ref;
     newOp = [];
-    if ((op.i != null) || (op.p != null)) op = [op];
+    if ((op.i != null) || (op.p != null)) {
+      op = [op];
+    }
     for (_i = 0, _len = op.length; _i < _len; _i++) {
       c = op[_i];
-      if ((_ref = c.p) == null) c.p = 0;
+            if ((_ref = c.p) != null) {
+        _ref;
+      } else {
+        c.p = 0;
+      };
       append(newOp, c);
     }
     return newOp;
   };
-
   transformPosition = function(pos, c, insertAfter) {
     if (c.i != null) {
       if (c.p < pos || (c.p === pos && insertAfter)) {
@@ -266,7 +272,6 @@
       }
     }
   };
-
   text.transformCursor = function(position, op, side) {
     var c, insertAfter, _i, _len;
     insertAfter = side === 'right';
@@ -276,7 +281,6 @@
     }
     return position;
   };
-
   text._tc = transformComponent = function(dest, c, otherC, side) {
     var cIntersect, intersectEnd, intersectStart, newC, otherIntersect, s;
     checkValidOp([c]);
@@ -291,7 +295,7 @@
         s = c.d;
         if (c.p < otherC.p) {
           append(dest, {
-            d: s.slice(0, (otherC.p - c.p)),
+            d: s.slice(0, otherC.p - c.p),
             p: c.p
           });
           s = s.slice(otherC.p - c.p);
@@ -315,14 +319,16 @@
             d: '',
             p: c.p
           };
-          if (c.p < otherC.p) newC.d = c.d.slice(0, (otherC.p - c.p));
+          if (c.p < otherC.p) {
+            newC.d = c.d.slice(0, otherC.p - c.p);
+          }
           if (c.p + c.d.length > otherC.p + otherC.d.length) {
             newC.d += c.d.slice(otherC.p + otherC.d.length - c.p);
           }
           intersectStart = Math.max(c.p, otherC.p);
           intersectEnd = Math.min(c.p + c.d.length, otherC.p + otherC.d.length);
-          cIntersect = c.d.slice(intersectStart - c.p, (intersectEnd - c.p));
-          otherIntersect = otherC.d.slice(intersectStart - otherC.p, (intersectEnd - otherC.p));
+          cIntersect = c.d.slice(intersectStart - c.p, intersectEnd - c.p);
+          otherIntersect = otherC.d.slice(intersectStart - otherC.p, intersectEnd - otherC.p);
           if (cIntersect !== otherIntersect) {
             throw new Error('Delete ops delete different text in the same region of the document');
           }
@@ -335,7 +341,6 @@
     }
     return dest;
   };
-
   invertComponent = function(c) {
     if (c.i != null) {
       return {
@@ -349,7 +354,6 @@
       };
     }
   };
-
   text.invert = function(op) {
     var c, _i, _len, _ref, _results;
     _ref = op.slice().reverse();
@@ -360,7 +364,6 @@
     }
     return _results;
   };
-
   if (typeof WEB !== "undefined" && WEB !== null) {
     exports.types || (exports.types = {});
     bootstrapTransform(text, transformComponent, checkValidOp, append);
@@ -369,9 +372,9 @@
     module.exports = text;
     require('./helpers').bootstrapTransform(text, transformComponent, checkValidOp, append);
   }
-
-  if (typeof WEB === 'undefined') text = require('./text');
-
+  if (typeof WEB === 'undefined') {
+    text = require('./text');
+  }
   text.api = {
     provides: {
       text: true
@@ -398,7 +401,7 @@
       op = [
         {
           p: pos,
-          d: this.snapshot.slice(pos, (pos + length))
+          d: this.snapshot.slice(pos, pos + length)
         }
       ];
       this.submitOp(op, callback);
@@ -410,21 +413,18 @@
         _results = [];
         for (_i = 0, _len = op.length; _i < _len; _i++) {
           component = op[_i];
-          if (component.i !== void 0) {
-            _results.push(this.emit('insert', component.p, component.i));
-          } else {
-            _results.push(this.emit('delete', component.p, component.d));
-          }
+          _results.push(component.i !== void 0 ? this.emit('insert', component.p, component.i) : this.emit('delete', component.p, component.d));
         }
         return _results;
       });
     }
   };
-
   checkMop = function(meta, mop) {
     var _ref, _ref2;
     if (mop.id) {
-      if (typeof mop.id !== 'string') throw new Error("invalid id " + mop.id);
+      if (typeof mop.id !== 'string') {
+        throw new Error("invalid id " + mop.id);
+      }
       if (!mop.as && !meta.sessions[mop.id]) {
         throw new Error("Referenced session ID missing");
       }
@@ -446,7 +446,6 @@
       }
     }
   };
-
   meta = {
     name: 'meta',
     create: function(meta) {
@@ -460,10 +459,16 @@
     },
     applyOp: function(meta, type, opData, side) {
       var id, session, _ref, _ref2, _ref3;
-      if (side == null) side = 'left';
+      if (side == null) {
+        side = 'left';
+      }
       if ((_ref = opData.meta) != null ? _ref.ts : void 0) {
         meta.mtime = opData.meta.ts;
-        if ((_ref2 = meta.ctime) == null) meta.ctime = meta.mtime;
+                if ((_ref2 = meta.ctime) != null) {
+          _ref2;
+        } else {
+          meta.ctime = meta.mtime;
+        };
       }
       if (type.transformCursor) {
         _ref3 = meta.sessions;
@@ -512,36 +517,33 @@
       return meta;
     }
   };
-
   if (typeof WEB !== "undefined" && WEB !== null) {
     exports.meta = meta;
   } else {
     module.exports = meta;
   }
-
   if (typeof WEB === "undefined" || WEB === null) {
     types = require('../types');
     metadata = require('../types/metadata');
   }
-
   if (typeof WEB !== "undefined" && WEB !== null) {
     metadata = exports.meta;
     exports.extendDoc = function(name, fn) {
       return Doc.prototype[name] = fn;
     };
   }
-
   Doc = (function() {
-
     function Doc(connection, name, openData) {
       this.connection = connection;
       this.name = name;
-      this.shout = __bind(this.shout, this);
-      this.flush = __bind(this.flush, this);
+      this.shout = __bind(this.shout, this);;
+      this.flush = __bind(this.flush, this);;
       openData || (openData = {});
       this.version = openData.v;
       this.snapshot = openData.snaphot;
-      if (openData.type) this._setType(openData.type);
+      if (openData.type) {
+        this._setType(openData.type);
+      }
       this.metadata = null;
       this.state = 'closed';
       this.autoOpen = false;
@@ -553,7 +555,6 @@
       this.pendingCallbacks = [];
       this.serverOps = {};
     }
-
     Doc.prototype._xf = function(client, server) {
       var client_, server_;
       if (this.type.transformX) {
@@ -564,43 +565,57 @@
         return [client_, server_];
       }
     };
-
     Doc.prototype._otApply = function(docOp, isRemote) {
       var oldSnapshot;
       oldSnapshot = this.snapshot;
       this.snapshot = this.type.apply(this.snapshot, docOp);
       this.emit('change', docOp, oldSnapshot);
-      if (isRemote) return this.emit('remoteop', docOp, oldSnapshot);
+      if (isRemote) {
+        return this.emit('remoteop', docOp, oldSnapshot);
+      }
     };
-
     Doc.prototype._mopApply = function(mop, isRemote) {
-      if (!this.metadata) this.metadata = metadata.create();
+      if (!this.metadata) {
+        this.metadata = metadata.create();
+      }
       metadata.applyMop(this.metadata, mop);
       this.emit('metachange', this.metadata);
-      if (mop.n) this.emit('metanew', mop.n);
-      if (mop.as) this.emit('metainsert', mop.id, mop.as);
-      if (mop.rs) return this.emit('metaremove', mop.id, mop.rs);
+      if (mop.n) {
+        this.emit('metanew', mop.n);
+      }
+      if (mop.as) {
+        this.emit('metainsert', mop.id, mop.as);
+      }
+      if (mop.rs) {
+        return this.emit('metaremove', mop.id, mop.rs);
+      }
     };
-
     Doc.prototype._connectionStateChanged = function(state, data) {
       switch (state) {
         case 'disconnected':
           this.state = 'closed';
-          if (this.inflightOp) this.inflightSubmittedIds.push(this.connection.id);
+          if (this.inflightOp) {
+            this.inflightSubmittedIds.push(this.connection.id);
+          }
           this.emit('closed');
           break;
         case 'ok':
-          if (this.autoOpen) this.open();
+          if (this.autoOpen) {
+            this.open();
+          }
           break;
         case 'stopped':
-          if (typeof this._openCallback === "function") this._openCallback(data);
+          if (typeof this._openCallback === "function") {
+            this._openCallback(data);
+          }
       }
       return this.emit(state, data);
     };
-
     Doc.prototype._setType = function(type) {
       var k, v, _ref;
-      if (typeof type === 'string') type = types[type];
+      if (typeof type === 'string') {
+        type = types[type];
+      }
       if (!(type && type.compose)) {
         throw new Error('Support for types without compose() is not implemented');
       }
@@ -616,22 +631,31 @@
         return this.provides = {};
       }
     };
-
     Doc.prototype._onMessage = function(msg) {
       var callback, docOp, error, oldInflightOp, op, path, response, undo, value, _i, _j, _len, _len2, _ref, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7;
       if (msg.open === true) {
         this.state = 'open';
         this._create = false;
-        if (this.created == null) this.created = !!msg.create;
-        if (msg.type) this._setType(msg.type);
+        if (this.created == null) {
+          this.created = !!msg.create;
+        }
+        if (msg.type) {
+          this._setType(msg.type);
+        }
         if (msg.create) {
           this.created = true;
           this.snapshot = this.type.create();
         } else {
-          if (this.created !== true) this.created = false;
-          if (msg.snapshot !== void 0) this.snapshot = msg.snapshot;
+          if (this.created !== true) {
+            this.created = false;
+          }
+          if (msg.snapshot !== void 0) {
+            this.snapshot = msg.snapshot;
+          }
         }
-        if (msg.v != null) this.version = msg.v;
+        if (msg.v != null) {
+          this.version = msg.v;
+        }
         if (this.inflightOp) {
           response = {
             doc: this.name,
@@ -659,9 +683,13 @@
         }
         this.state = 'closed';
         this.emit('closed');
-        if (typeof this._closeCallback === "function") this._closeCallback();
+        if (typeof this._closeCallback === "function") {
+          this._closeCallback();
+        }
         return this._closeCallback = null;
-      } else if (msg.op === null && error === 'Op already submitted') {} else if ((msg.op === void 0 && msg.mop === void 0 && msg.v !== void 0) || (msg.op && (_ref = msg.meta.source, __indexOf.call(this.inflightSubmittedIds, _ref) >= 0))) {
+      } else if (msg.op === null && error === 'Op already submitted') {
+        ;
+      } else if ((msg.op === void 0 && msg.mop === void 0 && msg.v !== void 0) || (msg.op && (_ref = msg.meta.source, __indexOf.call(this.inflightSubmittedIds, _ref) >= 0))) {
         oldInflightOp = this.inflightOp;
         this.inflightOp = null;
         this.inflightSubmittedIds.length = 0;
@@ -687,6 +715,7 @@
           }
           this.serverOps[this.version] = oldInflightOp;
           this.version++;
+          this.emit('acknowledge', oldInflightOp);
           _ref4 = this.inflightCallbacks;
           for (_j = 0, _len2 = _ref4.length; _j < _len2; _j++) {
             callback = _ref4[_j];
@@ -695,7 +724,9 @@
         }
         return this.flush();
       } else if (msg.op) {
-        if (msg.v < this.version) return;
+        if (msg.v < this.version) {
+          return;
+        }
         if (msg.doc !== this.name) {
           return this.emit('error', "Expected docName '" + this.name + "' but got " + msg.doc);
         }
@@ -727,7 +758,6 @@
         return typeof console !== "undefined" && console !== null ? console.warn('Unhandled document message:', msg) : void 0;
       }
     };
-
     Doc.prototype.flush = function() {
       if (!(this.connection.state === 'ok' && this.inflightOp === null && this.pendingOp !== null)) {
         return;
@@ -742,20 +772,22 @@
         v: this.version
       });
     };
-
     Doc.prototype.submitOp = function(op, callback) {
-      if (this.type.normalize != null) op = this.type.normalize(op);
+      if (this.type.normalize != null) {
+        op = this.type.normalize(op);
+      }
       this.snapshot = this.type.apply(this.snapshot, op);
       if (this.pendingOp !== null) {
         this.pendingOp = this.type.compose(this.pendingOp, op);
       } else {
         this.pendingOp = op;
       }
-      if (callback) this.pendingCallbacks.push(callback);
+      if (callback) {
+        this.pendingCallbacks.push(callback);
+      }
       this.emit('change', op);
       return setTimeout(this.flush, 0);
     };
-
     Doc.prototype.shout = function(msg) {
       return this.connection.send({
         doc: this.name,
@@ -765,28 +797,35 @@
         }
       });
     };
-
     Doc.prototype.open = function(callback) {
       var message;
-      var _this = this;
       this.autoOpen = true;
-      if (this.state !== 'closed') return;
+      if (this.state !== 'closed') {
+        return;
+      }
       message = {
         doc: this.name,
         open: true
       };
-      if (this.snapshot === void 0) message.snapshot = null;
-      if (this.type) message.type = this.type.name;
-      if (this.version != null) message.v = this.version;
-      if (this._create) message.create = true;
+      if (this.snapshot === void 0) {
+        message.snapshot = null;
+      }
+      if (this.type) {
+        message.type = this.type.name;
+      }
+      if (this.version != null) {
+        message.v = this.version;
+      }
+      if (this._create) {
+        message.create = true;
+      }
       this.connection.send(message);
       this.state = 'opening';
-      return this._openCallback = function(error) {
-        _this._openCallback = null;
+      return this._openCallback = __bind(function(error) {
+        this._openCallback = null;
         return typeof callback === "function" ? callback(error) : void 0;
-      };
+      }, this);
     };
-
     Doc.prototype.close = function(callback) {
       this.autoOpen = false;
       if (this.state === 'closed') {
@@ -800,87 +839,84 @@
       this.emit('closing');
       return this._closeCallback = callback;
     };
-
     return Doc;
-
   })();
-
   if (typeof WEB === "undefined" || WEB === null) {
     MicroEvent = require('./microevent');
   }
-
   MicroEvent.mixin(Doc);
-
   exports.Doc = Doc;
-
   if (typeof WEB !== "undefined" && WEB !== null) {
     types = exports.types;
-    if (!window.BCSocket) {
-      throw new Error('Must load browserchannel before this library');
-    }
-    BCSocket = window.BCSocket;
+    BCSocket = window.BCSocket, SockJS = window.SockJS;
   } else {
     types = require('../types');
     BCSocket = require('browserchannel').BCSocket;
     Doc = require('./doc').Doc;
   }
-
   Connection = (function() {
-
-    function Connection(host) {
-      var _this = this;
+    function Connection(host, authentication) {
       this.docs = {};
       this.state = 'connecting';
-      this.socket = new BCSocket(host, {
+      this.socket = typeof useSockJS !== "undefined" && useSockJS !== null ? new SockJS(host) : new BCSocket(host, {
         reconnect: true
       });
-      this.socket.onmessage = function(msg) {
+      this.socket.send({
+        "auth": authentication ? authentication : null
+      });
+      this.socket.onmessage = __bind(function(msg) {
         var docName;
+        if (typeof useSockJS !== "undefined" && useSockJS !== null) {
+          msg = JSON.parse(msg.data);
+        }
         if (msg.auth === null) {
-          _this.lastError = msg.error;
-          _this.disconnect();
-          return _this.emit('connect failed', msg.error);
+          this.lastError = msg.error;
+          this.disconnect();
+          return this.emit('connect failed', msg.error);
         } else if (msg.auth) {
-          _this.id = msg.auth;
-          _this.setState('ok');
+          this.id = msg.auth;
+          this.setState('ok');
           return;
         }
         docName = msg.doc;
         if (docName !== void 0) {
-          _this.lastReceivedDoc = docName;
+          this.lastReceivedDoc = docName;
         } else {
-          msg.doc = docName = _this.lastReceivedDoc;
+          msg.doc = docName = this.lastReceivedDoc;
         }
-        if (_this.docs[docName]) {
-          return _this.docs[docName]._onMessage(msg);
+        if (this.docs[docName]) {
+          return this.docs[docName]._onMessage(msg);
         } else {
           return typeof console !== "undefined" && console !== null ? console.error('Unhandled message', msg) : void 0;
         }
-      };
+      }, this);
       this.connected = false;
-      this.socket.onclose = function(reason) {
-        _this.setState('disconnected', reason);
+      this.socket.onclose = __bind(function(reason) {
+        this.setState('disconnected', reason);
         if (reason === 'Closed' || reason === 'Stopped by server') {
-          return _this.setState('stopped', _this.lastError || reason);
+          return this.setState('stopped', this.lastError || reason);
         }
-      };
-      this.socket.onerror = function(e) {
-        return _this.emit('error', e);
-      };
-      this.socket.onopen = function() {
-        _this.lastError = _this.lastReceivedDoc = _this.lastSentDoc = null;
-        return _this.setState('handshaking');
-      };
-      this.socket.onconnecting = function() {
-        return _this.setState('connecting');
-      };
+      }, this);
+      this.socket.onerror = __bind(function(e) {
+        return this.emit('error', e);
+      }, this);
+      this.socket.onopen = __bind(function() {
+        this.lastError = this.lastReceivedDoc = this.lastSentDoc = null;
+        return this.setState('handshaking');
+      }, this);
+      this.socket.onconnecting = __bind(function() {
+        return this.setState('connecting');
+      }, this);
     }
-
     Connection.prototype.setState = function(state, data) {
       var doc, docName, _ref, _results;
-      if (this.state === state) return;
+      if (this.state === state) {
+        return;
+      }
       this.state = state;
-      if (state === 'disconnected') delete this.id;
+      if (state === 'disconnected') {
+        delete this.id;
+      }
       this.emit(state, data);
       _ref = this.docs;
       _results = [];
@@ -890,7 +926,6 @@
       }
       return _results;
     };
-
     Connection.prototype.send = function(data) {
       var docName;
       docName = data.doc;
@@ -899,42 +934,60 @@
       } else {
         this.lastSentDoc = docName;
       }
+      if (typeof useSockJS !== "undefined" && useSockJS !== null) {
+        data = JSON.stringify(data);
+      }
       return this.socket.send(data);
     };
-
     Connection.prototype.disconnect = function() {
       return this.socket.close();
     };
-
     Connection.prototype.makeDoc = function(name, data, callback) {
       var doc;
-      var _this = this;
-      if (this.docs[name]) throw new Error("Doc " + name + " already open");
+      if (this.docs[name]) {
+        throw new Error("Doc " + name + " already open");
+      }
       doc = new Doc(this, name, data);
       this.docs[name] = doc;
-      return doc.open(function(error) {
-        if (error) delete _this.docs[name];
+      return doc.open(__bind(function(error) {
+        if (error) {
+          delete this.docs[name];
+        }
         return callback(error, (!error ? doc : void 0));
-      });
+      }, this));
     };
-
     Connection.prototype.openExisting = function(docName, callback) {
       var doc;
-      if (this.state === 'stopped') return callback('connection closed');
-      if (this.docs[docName]) return callback(null, this.docs[docName]);
+      if (this.state === 'stopped') {
+        return callback('connection closed');
+      }
+      if (this.docs[docName]) {
+        return callback(null, this.docs[docName]);
+      }
       return doc = this.makeDoc(docName, {}, callback);
     };
-
     Connection.prototype.open = function(docName, type, callback) {
       var doc;
-      if (this.state === 'stopped') return callback('connection closed');
+      if (this.state === 'stopped') {
+        return callback('connection closed');
+      }
+      if (this.state === 'connecting') {
+        this.on('handshaking', function() {
+          return this.open(docName, type, callback);
+        });
+        return;
+      }
       if (typeof type === 'function') {
         callback = type;
         type = 'text';
       }
       callback || (callback = function() {});
-      if (typeof type === 'string') type = types[type];
-      if (!type) throw new Error("OT code for document type missing");
+      if (typeof type === 'string') {
+        type = types[type];
+      }
+      if (!type) {
+        throw new Error("OT code for document type missing");
+      }
       if (docName == null) {
         throw new Error('Server-generated random doc names are not currently supported');
       }
@@ -952,40 +1005,44 @@
         type: type.name
       }, callback);
     };
-
     Connection.prototype.setExtraHeaders = function(headers) {
       return this.socket.setExtraHeaders(headers);
     };
-
     return Connection;
-
   })();
-
   if (typeof WEB === "undefined" || WEB === null) {
     MicroEvent = require('./microevent');
   }
-
   MicroEvent.mixin(Connection);
-
   exports.Connection = Connection;
-
-  if (typeof WEB === "undefined" || WEB === null) {
+  if (typeof WEB !== "undefined" && WEB !== null) {
+    hasBCSocket = window.BCSocket !== void 0;
+    hasSockJS = window.SockJS !== void 0;
+    if (!(hasBCSocket || hasSockJS)) {
+      throw new Error('Must load socks or browserchannel before this library');
+    }
+    if (hasSockJS && !hasBCSocket) {
+      useSockJS = true;
+    }
+  } else {
     Connection = require('./connection').Connection;
   }
-
   exports.open = (function() {
     var connections, getConnection, maybeClose;
     connections = {};
-    getConnection = function(origin) {
-      var c, del, location;
+    getConnection = function(origin, authentication) {
+      var c, del, location, path;
       if (typeof WEB !== "undefined" && WEB !== null) {
         location = window.location;
-        if (origin == null) {
-          origin = "" + location.protocol + "//" + location.host + "/channel";
-        }
+        path = useSockJS ? 'sockjs' : 'channel';
+                if (origin != null) {
+          origin;
+        } else {
+          origin = "" + location.protocol + "//" + location.host + "/" + path;
+        };
       }
       if (!connections[origin]) {
-        c = new Connection(origin);
+        c = new Connection(origin, authentication);
         del = function() {
           return delete connections[origin];
         };
@@ -1001,20 +1058,23 @@
       _ref = c.docs;
       for (name in _ref) {
         doc = _ref[name];
-        if (doc.state !== 'closed' || doc.autoOpen) numDocs++;
+        if (doc.state !== 'closed' || doc.autoOpen) {
+          numDocs++;
+        }
       }
-      if (numDocs === 0) return c.disconnect();
+      if (numDocs === 0) {
+        return c.disconnect();
+      }
     };
     return function(docName, type, options, callback) {
-      var c, headers, origin;
+      var authentication, c, origin;
       if (typeof options === 'function') {
         callback = options;
-        options = null;
+        options = {};
       }
-      origin = options != null ? options.origin : void 0;
-      headers = options != null ? options.headers : void 0;
-      c = getConnection(origin);
-      if (headers) c.setExtraHeaders(headers);
+      origin = options.origin;
+      authentication = options.authentication;
+      c = getConnection(origin, authentication);
       c.numDocs++;
       c.open(docName, type, function(error, doc) {
         if (error) {
@@ -1031,10 +1091,8 @@
       return c;
     };
   })();
-
   if (typeof WEB === "undefined" || WEB === null) {
     exports.Doc = require('./doc').Doc;
     exports.Connection = require('./connection').Connection;
   }
-
 }).call(this);
