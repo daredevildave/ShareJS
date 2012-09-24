@@ -131,6 +131,15 @@ exports.handler = (session, createAgent) ->
       if session.ready()
         session.send response
 
+    sendMetadata = (docName, version, metadata) ->
+      msg = 
+        doc: docName,
+        mop: {
+          n: metadata
+        },
+        v: version
+      send msg
+
     # Open the given document name, at the requested version.
     # callback(error, version)
     open = (docName, version, callback) ->
@@ -146,18 +155,29 @@ exports.handler = (session, createAgent) ->
         # Skip the op if this socket sent it.
         return if opData.meta.source is agent.sessionId
 
-        opMsg =
-          doc: docName
-          op: opData.op
-          v: opData.v
-          meta: opData.meta
-
-        send opMsg
+        if opData.op
+          opMsg =
+            doc: docName
+            op: opData.op
+            v: opData.v
+            meta: opData.meta
+          send opMsg
+        else if opData.mop
+          mopMsg = 
+            doc: docName,
+            mop: opData.mop,
+            v: opData.v,
+            meta: opData.meta
+          send mopMsg
+        else
+          callback 'Unrecognized op'
 
       # Tell the socket the doc is open at the requested version
       agent.listen docName, version, listener, (error, v) ->
         delete docState[docName].listener if error
         callback error, v
+        # Connect agent (update metadata) after callback is complete
+        agent.connect docName
 
     # Close the named document.
     # callback([error])
@@ -264,6 +284,11 @@ exports.handler = (session, createAgent) ->
           msg.open = true
           msg.v = version
           callback()
+
+          if docData
+            sendMetadata docName, query.v, docData.meta
+          else
+            sendMetadata docName, query.v, null
 
       # Technically, we don't need a snapshot if the user called create but not open or createSnapshot,
       # but no clients do that yet anyway.
