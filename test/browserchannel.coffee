@@ -61,6 +61,8 @@ module.exports = testCase
           callback()
 
         @socket.onerror = (e) -> console.warn 'eeee', e
+        
+        @socket.send({auth:null});
 
         @expect = (data, callback) =>
           expectData @socket, data, callback
@@ -354,7 +356,7 @@ module.exports = testCase
       action.reject()
 
     socket = new BCSocket "http://localhost:#{@server.address().port}/channel"
-
+    socket.send({auth:null})
     expectData socket, {auth:null, error:'forbidden'}, ->
       socket.onclose = ->
         test.expect 7
@@ -408,3 +410,30 @@ module.exports = testCase
       @expect {v:null, error:'forbidden'}, ->
         test.done()
 
+  'Authentication string available in auth function': (test) ->
+    @auth = (agent, action) ->
+      test.strictEqual agent.authentication, '1234'
+      action.reject()
+      
+    socket = new BCSocket "http://localhost:#{@server.address().port}/channel"
+    socket.onclose = () ->
+      test.done()
+    socket.send {auth:'1234'}
+
+  'Authentication object available in auth function': (test) ->
+    @auth = (agent, action) ->
+      test.strictEqual agent.authentication.a, 1234
+      action.reject()
+      
+    socket = new BCSocket "http://localhost:#{@server.address().port}/channel"
+    socket.onclose = () ->
+      test.done()
+    socket.send {auth:{a:1234}}
+
+  'Socket timeout if no auth message is sent': (test) ->
+    socket = new BCSocket "http://localhost:#{@server.address().port}/channel"
+    socket.onmessage = (data) ->
+      test.strictEqual data.auth, null
+      test.strictEqual data.error, 'Timeout waiting for client auth message'
+    socket.onclose = () ->
+      test.done()
