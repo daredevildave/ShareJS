@@ -5,11 +5,6 @@ connect = require 'connect'
 Model = require './model'
 createDb = require './db'
 
-rest = require './rest'
-socketio = require './socketio'
-browserChannel = require './browserchannel'
-sockjs = require './sockjs'
-
 # Create an HTTP server and attach whatever frontends are specified in the options.
 #
 # The model will be created based on options if it is not specified.
@@ -40,18 +35,23 @@ create.attach = attach = (server, options, model = createModel(options)) ->
   server.use options.staticpath, connect.static("#{__dirname}/../../webclient") if options.staticpath != null
 
   createAgent = require('./useragent') model, options
-
-  # The client frontend doesn't get access to the model at all, to make sure security stuff is
-  # done properly.
-  server.use rest(createAgent, options.rest) if options.rest != null
-
-  # Socketio frontend is now disabled by default.
-  socketio.attach(server, createAgent, options.socketio or {}) if options.socketio?
-
-  # SockJS frontend is disabled by default
-  sockjs.attach(server, createAgent, options.sockjs or {}) if options.sockjs?
-
-  browserChannel.attach(server, createAgent, options.browserChannel or {}) if options.browserChannel != null
+  
+  if options.rest
+    rest = require './rest'
+    # The client frontend doesn't get access to the model at all, to make sure security stuff is
+    # done properly.
+    server.use rest(createAgent, options.rest)
+  else if options.sockjs
+    sockjs = require './sockjs'
+    sockjs.attach(server, createAgent, options.sockjs or {})
+  else if options.socketio
+    # SocketIO support is deprecated, BrowserChannel or SockJS is recommended
+    socketio = require './socketio'
+    socketio.attach(server, createAgent, options.socketio or {})
+  else
+    # BrowserChannel is the default option
+    browserChannel = require './browserchannel'
+    browserChannel.attach(server, createAgent, options.browserChannel or {})
 
 
   server
