@@ -378,6 +378,13 @@ genTests = (client) -> testCase
 
       doc.insert 0, 'hi'
 
+  'error message passed to reject is the error passed to client': (test) ->
+    @auth = (client, action) -> action.reject('not allowed')
+
+    client.open @name, 'text', "http://localhost:#{@port}/sjs", (error, doc) =>
+      test.strictEqual error, 'not allowed'
+      test.done()
+
   'If auth rejects your op, other transforms work correctly': (test) ->
     # This should probably have a randomized tester as well.
     @auth = (client, action) ->
@@ -411,6 +418,25 @@ genTests = (client) -> testCase
         # ... and yet another op on the server. (Remember, the server hasn't seen either op yet.)
         @model.applyOp @name, {op:[{i:'dD', p:3}], v:1, meta:{}}, =>
           @model.getSnapshot @name, e
+
+  'If operation is rejected, action.responded == true': (test) ->
+    @auth = (client, action) ->
+      test.strictEqual action.responded, false
+      action.reject()
+      test.strictEqual action.responded, true
+      test.done()
+
+    client.open @name, 'text', "http://localhost:#{@port}/sjs", (error, doc) =>
+
+  'If operation is accepted, action.responded == true': (test) ->
+    @auth = (client, action) ->
+      test.strictEqual action.responded, false
+      action.accept()
+      test.strictEqual action.responded, true
+      
+    client.open @name, 'text', "http://localhost:#{@port}/sjs", (error, doc) =>
+      doc.close()
+      test.done()
 
   'Text API is advertised': (test) ->
     @c.open @name, 'text', (error, doc) ->
