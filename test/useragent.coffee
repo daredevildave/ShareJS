@@ -42,8 +42,8 @@ genTests = (async) -> testCase
 
     @name = 'testingdoc'
 
-    # Not exposed: flush and applyMetaOp.
-    functions = ['create', 'delete', 'getOps', 'getSnapshot', 'getVersion', 'applyOp', 'listen', 'removeListener']
+    # Not exposed: flush
+    functions = ['create', 'delete', 'getOps', 'getSnapshot', 'getVersion', 'applyOp', 'applyMop', 'listen', 'removeListener']
     @model = {}
     for functionName in functions
       @model[functionName] = do (functionName) -> -> throw new Error "Unexpected call to #{functionName}"
@@ -407,7 +407,7 @@ genTests = (async) -> testCase
       test.strictEqual docName, @name
       test.strictEqual listener, _listener
     @model.applyMop = (docName, mop, callback) ->
-      callback null, 0
+      callback? null, 0
 
     @agent.listen @name, 100, listener, (error, result) =>
       @agent.removeListener @name

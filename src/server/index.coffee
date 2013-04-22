@@ -1,9 +1,15 @@
 # The server module...
 
 connect = require 'connect'
+http = require 'http'
 
 Model = require './model'
 createDb = require './db'
+
+rest = require './rest'
+browserChannel = require './browserchannel'
+sockjs = require './sockjs'
+websocket = require './websocket'
 
 # Create an HTTP server and attach whatever frontends are specified in the options.
 #
@@ -19,7 +25,7 @@ create.createModel = createModel = (options) ->
   new Model db, options
 
 # Attach the OT server frontends to the provided Node HTTP server. Use this if you
-# already have a http.Server or https.Server and want to make some URL paths do OT.
+# already have a `connect` compatible server and want to make some URL paths do OT.
 #
 # The options object specifies options for everything. If settings are missing,
 # defaults will be provided.
@@ -35,24 +41,23 @@ create.attach = attach = (server, options, model = createModel(options)) ->
   server.use options.staticpath, connect.static("#{__dirname}/../../webclient") if options.staticpath != null
 
   createAgent = require('./useragent') model, options
-  
-  if options.rest
-    rest = require './rest'
-    # The client frontend doesn't get access to the model at all, to make sure security stuff is
-    # done properly.
-    server.use rest(createAgent, options.rest)
-  else if options.sockjs
-    sockjs = require './sockjs'
-    sockjs.attach(server, createAgent, options.sockjs or {})
-  else if options.socketio
-    # SocketIO support is deprecated, BrowserChannel or SockJS is recommended
-    socketio = require './socketio'
-    socketio.attach(server, createAgent, options.socketio or {})
-  else
-    # BrowserChannel is the default option
-    browserChannel = require './browserchannel'
-    browserChannel.attach(server, createAgent, options.browserChannel or {})
 
+  # The client frontend doesn't get access to the model at all, to make sure security stuff is
+  # done properly.
+  server.use rest(createAgent, options.rest) if options.rest != null
+
+  browserChannel.attach(server, createAgent, options.browserChannel or {}) if options.browserChannel != null
+
+  if !(server instanceof http.Server)
+    server = http.createServer server
+
+  # this is required by sockjs since it only works with http server, not with
+  # `connect` server
+  # SockJS frontend is disabled by default
+  sockjs.attach(server, createAgent, options.sockjs or {}) if options.sockjs?
+
+  # WebSocket frontend is disabled by default
+  websocket.attach(server, createAgent, options.websocket or {}) if options.websocket?
 
   server
 

@@ -13,11 +13,20 @@
 
 if WEB?
   types = exports.types
-  {BCSocket, SockJS} = window 
+  {BCSocket, SockJS, WebSocket} = window
+  if BCSocket
+    socketImpl = 'channel'
+  else
+    if SockJS
+      socketImpl = 'sockjs'
+    else
+      socketImpl = 'websocket'
 else
   types = require '../types'
   {BCSocket} = require 'browserchannel'
   Doc = require('./doc').Doc
+  WebSocket = require 'ws'
+  socketImpl = null
 
 class Connection
   constructor: (host, authentication) ->
@@ -32,14 +41,17 @@ class Connection
     # - 'stopped': The connection is closed, and will not reconnect.
     @state = 'connecting'
 
-    @socket = 
-      if useSockJS?
-        new SockJS(host)    
-      else
-        new BCSocket(host, reconnect:true)
+    unless socketImpl?
+      if host.match /^ws:/ then socketImpl = 'websocket'
+
+    @socket = switch socketImpl
+      when 'channel' then new BCSocket(host, reconnect:true)
+      when 'sockjs' then new ReconnectingWebSocket(host, SockJS)
+      when 'websocket' then new ReconnectingWebSocket(host)
+      else new BCSocket(host, reconnect:true)
 
     @socket.onmessage = (msg) =>
-      msg = JSON.parse(msg.data) if useSockJS?
+      msg = JSON.parse(msg.data) if socketImpl in ['sockjs', 'websocket']
       if msg.auth is null
         # Auth failed.
         @lastError = msg.error # 'forbidden'
@@ -110,7 +122,7 @@ class Connection
         @lastSentDoc = docName
 
     #console.warn 'c->s', data
-    data = JSON.stringify(data) if useSockJS?
+    data = JSON.stringify(data) if socketImpl in ['sockjs', 'websocket']
     @socket.send data
 
   disconnect: ->
@@ -127,13 +139,15 @@ class Connection
 
     doc.open (error) =>
       delete @docs[name] if error
+      unless error
+        doc.on 'closed', => delete @docs[name]
       callback error, (doc unless error)
 
   # Open a document that already exists
   # callback(error, doc)
   openExisting: (docName, callback) ->
     return callback 'connection closed' if @state is 'stopped'
-    return callback null, @docs[docName] if @docs[docName]
+    return @_ensureOpenState(@docs[docName], callback) if @docs[docName]
     doc = @makeDoc docName, {}, callback
 
   # Open a document. It will be created if it doesn't already exist.
@@ -164,15 +178,19 @@ class Connection
     if @docs[docName]
       doc = @docs[docName]
       if doc.type == type
-        callback null, doc
+        @_ensureOpenState(doc, callback)
       else
         callback 'Type mismatch', doc
       return
 
     @makeDoc docName, {create:true, type:type.name}, callback
 
-  setExtraHeaders: (headers) ->
-    @socket.setExtraHeaders headers
+  _ensureOpenState: (doc, callback) ->
+    switch doc.state
+      when 'open' then callback null, doc
+      when 'opening' then @on 'open', -> callback null, doc
+      when 'closed' then doc.open (error) -> callback error, (doc unless error)
+    return
 
 # Not currently working.
 #  create: (type, callback) ->

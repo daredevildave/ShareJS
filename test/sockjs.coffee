@@ -22,6 +22,8 @@ expectData = (socket, expectedData, callback) ->
   expectedData = [expectedData] unless Array.isArray expectedData
 
   socket.onmessage = (data) ->
+      if data.mop # ignore metadata operations
+        return
       expected = expectedData.shift()
       if expected.meta == ANYOBJECT
         assert.strictEqual typeof data.meta, 'object'
@@ -36,7 +38,7 @@ class WSSocket
   
   constructor: (url, callback)->
 
-    # Open a new browserchannel session to the server
+    # Open a new sockjs websocket session to the server
     ws = new WebSocketClient
     ws.connect url
    
@@ -50,11 +52,9 @@ class WSSocket
       @connection.on 'error', (err) => callback(err)
 
     @__defineSetter__ "onmessage", (callback) =>
-        # Removes existing listener
-        listeners = @connection.listeners('message')
-        listeners.splice(0, listeners.length)
-        @connection.on 'message', (data) => 
-          callback JSON.parse(data.utf8Data)
+      @connection.removeAllListeners "message"
+      @connection.on 'message', (data) =>
+        callback JSON.parse(data.utf8Data)
 
     @__defineSetter__ "onclose", (callback) =>
       listeners = @connection.listeners('close')
@@ -313,6 +313,8 @@ module.exports = testCase
 
         # All the ops that come through the socket should have the doc name set.
         @socket.onmessage = (data) =>
+          if data.mop # ignore metadata operations
+            return
           test.strictEqual data.doc?, true
           passPart()
 

@@ -801,7 +801,6 @@ genTests = (async) -> testCase
 
   "flush with no database does nothing": (test) ->
     @setDb null
-
     @model.create @name, 'simple', (error) =>
       @model.applyOp @name, {v:0, op:{position:0, text:'hi'}, meta:{}}, (error) =>
         @model.flush ->
@@ -820,6 +819,7 @@ genTests = (async) -> testCase
       callback null, {snapshot:{str:'hi'}, type:'simple', meta:{ctime:100, mtime:100}, v:0}
 
     @model.create @name, 'simple', {}, (error) =>
+      Date.now = @realDateNow
       setTimeout =>
           @model.getSnapshot @name, (error, data) ->
             test.deepEqual data, {snapshot:{str:'hi'}, type:types.simple, meta:{ctime:100, mtime:100, sessions:{}}, v:0}
@@ -840,6 +840,7 @@ genTests = (async) -> testCase
       callback()
 
     @model.applyOp @name, {v:100, op:{position:0, text:'x'}, meta:{}}, (error) =>
+      Date.now = @realDateNow
       setTimeout =>
           # At this point, writeSnapshot should have been called.
           test.expect 3
@@ -854,7 +855,7 @@ genTests = (async) -> testCase
       @model.listen @name, (->), (error, v) =>
         test.equal error, null
         test.strictEqual v, 0
-
+        Date.now = @realDateNow
         setTimeout =>
             @model.getSnapshot @name, (error, data) ->
               test.deepEqual data, {snapshot:{str:''}, type:types.simple, meta:{ctime:321, mtime:321, sessions:{}}, v:0}
@@ -875,7 +876,7 @@ genTests = (async) -> testCase
       @model.listen @name, listener, (error) =>
         test.equal error, null
         @model.removeListener @name, listener
-
+        Date.now = @realDateNow
         setTimeout =>
             @model.getSnapshot @name, (error, data) ->
               test.deepEqual data, {snapshot:{str:'hi'}, type:types.simple, meta:{ctime:100, mtime:100, sessions:{}}, v:100}
@@ -887,6 +888,7 @@ genTests = (async) -> testCase
     @setDb null
 
     @model.create @name, 'simple', (error) =>
+      Date.now = @realDateNow
       setTimeout =>
           @model.getSnapshot @name, (error, data) ->
             test.deepEqual data, {snapshot:{str:''}, type:types.simple, meta:{ctime:321, mtime:321, sessions:{}}, v:0}

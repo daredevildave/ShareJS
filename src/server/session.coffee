@@ -86,8 +86,8 @@ exports.handler = (session, createAgent) ->
         query.doc = lastReceivedDoc
 
       docState[query.doc] or= queue: syncQueue (query, callback) ->
-                                                   # When the session is closed, we'll nuke docState. When that happens, no more messages
-                                                   # should be handled.
+        # When the session is closed, we'll nuke docState. When that happens, no more messages
+        # should be handled.
         return callback() unless docState
 
         # Close messages are {open:false}
@@ -148,6 +148,8 @@ exports.handler = (session, createAgent) ->
       #p "Registering listener on #{docName} by #{socket.id} at #{version}"
 
       docState[docName].listener = listener = (opData) ->
+        # Listener can be called after close
+        return unless docState?[docName]
         throw new Error 'Consistency violation - doc listener invalid' unless docState[docName].listener == listener
 
         #p "listener doc:#{docName} opdata:#{i opData} v:#{version}"
@@ -174,7 +176,7 @@ exports.handler = (session, createAgent) ->
 
       # Tell the socket the doc is open at the requested version
       agent.listen docName, version, listener, (error, v) ->
-        delete docState[docName].listener if error
+        delete docState[docName].listener if error and docState
         callback error, v
         # Connect agent (update metadata) after callback is complete
         agent.connect docName
@@ -332,10 +334,10 @@ exports.handler = (session, createAgent) ->
 
     # Authentication process has failed, send error and stop session
     failAuthentication = (error) ->
-      session.send {
-        auth: null, 
+      session.send
+        auth: null
         error: error
-      }
+      
       session.stop()
 
     # Wait for client to send an auth message, but don't wait forever
@@ -346,7 +348,7 @@ exports.handler = (session, createAgent) ->
     # We don't process any messages from the agent until they've authorized. Instead,
     # they are stored in this buffer.
     buffer = []
-    session.on 'message', bufferMsg = (msg) -> 
+    session.on 'message', bufferMsg = (msg) ->
       if typeof msg.auth != 'undefined'
         clearTimeout timeout
         data.authentication = msg.auth

@@ -25,7 +25,7 @@ isArray = (o) -> Object.prototype.toString.call(o) == '[object Array]'
 # - add(docName, data)
 # - load(docName, data)
 # - applyOp(docName, opData, snapshot, oldSnapshot)
-# - applyMetaOp(docName, path, value)
+# - applyMop(docName, path, value)
 
 module.exports = Model = (db, options) ->
   # db can be null if the user doesn't want persistance.
@@ -231,6 +231,11 @@ module.exports = Model = (db, options) ->
 
     if error
       callback error for callback in callbacks if callbacks
+    else if docs[docName]
+      # The doc may have been created by another agent since we last checked for its
+      # existence in docs. If it was, don't create it again.
+      doc = docs[docName]
+      callback 'Document already exists' for callback in callbacks if callbacks
     else
       throw new Error "Doc #{docName} already exists" if docs[docName]
       throw new Error 'Add should be called with the type object' unless typeof data.type is 'object'
@@ -255,6 +260,7 @@ module.exports = Model = (db, options) ->
         snapshotWriteLock: false
         dbMeta: dbMeta
 
+      doc.eventEmitter.setMaxListeners 0
       doc.opQueue = makeOpQueue docName, doc
       doc.meta.sessions = {}
       
@@ -352,11 +358,11 @@ module.exports = Model = (db, options) ->
       #
       # The first check is because its possible that between refreshReapingTimeout being called and this
       # event being fired, someone called delete() on the document and hence the doc is something else now.
+
       if doc == docs[docName] and
           doc.eventEmitter.listeners('op').length == 0 and
           (db or options.forceReaping) and
           doc.opQueue.busy is false
-
         clearTimeout doc.reapTimer
         doc.reapTimer = reapTimer = setTimeout ->
             tryWriteSnapshot docName, ->
@@ -418,7 +424,7 @@ module.exports = Model = (db, options) ->
 
     type = types[type] if typeof type == 'string'
     return callback? 'Type not found' unless type
-
+    
     data =
       v:0
       meta:metadata.create meta
@@ -543,7 +549,7 @@ module.exports = Model = (db, options) ->
   # TODO: op and meta should be combineable in the op that gets sent
   @applyMop = (docName, metaOpData, callback) ->
     load docName, (error, doc) ->
-      return callback error if error
+      return callback? error if error
 
       # Default to operating on the latest version
       metaOpData.v = doc.v if !metaOpData.v
@@ -605,8 +611,9 @@ module.exports = Model = (db, options) ->
   # This is synchronous.
   @removeListener = (docName, listener) ->
     # The document should already be loaded.
-    doc = docs[docName]
-    throw new Error 'removeListener called but document not loaded' unless doc
+    # If it's not we probably hit a race condition where the browser closes
+    # before the document opened. In that case, ignore.
+    return unless doc = docs[docName]
 
     doc.eventEmitter.removeListener 'op', listener
     doc.eventEmitter.removeListener 'mop', listener
@@ -617,7 +624,6 @@ module.exports = Model = (db, options) ->
   # sharejs will happily replay uncommitted ops when documents are re-opened anyway.
   @flush = (callback) ->
     return callback?() unless db
-
     pendingWrites = 0
 
     for docName, doc of docs

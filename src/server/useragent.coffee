@@ -126,7 +126,7 @@ module.exports = (model, options) ->
           model.applyOp docName, opData, callback
       else
         @doAuth {docName, meta:opData.meta}, 'submit meta', callback, =>
-          model.applyMetaOp docName, opData, callback
+          model.applyMop docName, opData, callback
 
     # Delete the named operation.
     # Callback is passed (deleted?, error message)
@@ -158,7 +158,7 @@ module.exports = (model, options) ->
             callback? error, v
 
     removeListener: (docName) ->
-      throw new Error 'Document is not open' unless @listeners[docName]
+      return unless @listeners[docName]
       model.removeListener docName, @listeners[docName]
       delete @listeners[docName]
 
