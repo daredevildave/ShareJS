@@ -16,12 +16,12 @@
     "sockjs": ">= 0.3.1",
     "socket.io": "~0.8",
     "socket.io-client": "~0.8",
-    "browserchannel": "*",
-    "ws": "*",
+    "browserchannel": "1.2.0",
+    "ws": "0.4.31",
     "connect": "<3.x",
     "request": ">= 2.1.1",
     "coffee-script": "<1.6",
-    "hat": "*"
+    "hat": "0.0.3"
   },
   "devDependencies": {
     "express": "~ 3.x",
